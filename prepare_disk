@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Attempt to unmount any previous attempts
+err=''
+trap "err+=1" ERR
+
+for ATTEMPTS in 1 2 3; do
+  err=''
+  umount --force /mnt/sys/firmware/efi/efivars 2>/dev/null
+  umount --force /mnt/sys 2>/dev/null
+  umount --force /mnt/dev/pts 2>/dev/null
+  umount --force /mnt/dev 2>/dev/null
+  umount --force /mnt/tmp 2>/dev/null
+  umount --force /mnt/run 2>/dev/null
+  umount --force /mnt/proc 2>/dev/null
+
+  umount /dev/xvda3 2>/dev/null
+
+  if [[ ${#err} -eq 8 ]]; then
+    #echo "if length is 8, all mounts are unmounted"
+    break
+  fi
+done
+
+if [[ ${#err} -ne 8 ]]; then
+  echo 'multiple attempts to unmount all /mnt mounts failed, aborting.'
+  exit 1
+fi
+
+# Programatically clear out partitions on xvda and replace it with
+# a single Linux partition that takes up the whole /dev/xvda blockdev
+sfdisk /dev/xvda < xvda.part
+
+# Make the ext4 filesystem, confirm it non-interactively
+mkfs.ext4 /dev/xvda3 -F -F
+
+# Mount the newly created fs on the /mnt mount point, as crux prefers
+mount /dev/xvda3 /mnt
