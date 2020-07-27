@@ -1,1 +1,14 @@
+/etc/dhcpcd.conf
 
+# Static IP configuration.
+interface enp7s0
+static ip_address=192.168.165.30/30
+static routers=192.168.165.29
+static domain_name_servers=8.8.8.8
+
+
+/etc/rc.local
+# Static IP configuration via iproute
+ip link set dev enp7s0 up
+ip addr add 192.168.165.30/30 brd + dev enp7s0
+ip route add default via 192.168.165.29
